@@ -1,0 +1,100 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Fancy Counter</title>
+		<link rel="preconnect" href="https://fonts.gstatic.com">
+		<link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+		<style type="text/css">
+			body {
+				background-color: #283593;
+				color: #fff;
+				font-family: Roboto, sans-serif;
+			}
+			h1 {
+				font-size: 64px;
+				text-align: right;
+			}
+			.container {
+				margin: 100px auto;
+				width: 12em;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<h1><code id="counter">0</code></h1>
+			<button id="pause_resume" onclick="toggleUpdating()">Pause</button>
+		</div>
+		<script>
+			const UPDATE_TICK = 2000;
+			const UPDATE_AMOUNT = 1000;
+			const ANIMATION_DURATION = 500;
+
+			const formatter = new Intl.NumberFormat('en-US');
+
+			let updateTimer = null;
+			let counter = 0;
+			let counterNext = 0;
+
+			function linear(from, to, start_ts, end_ts, current_ts) {
+				const next = Math.round(from + (to - from) * (current_ts - start_ts) / (end_ts - start_ts));
+				return next;
+			}
+
+			function ease_in_out(from, to, start_ts, end_ts, current_ts) {
+				const next = Math.round(from + (to - from) * .5 * (1 + Math.tanh(7 * (2 * (current_ts - start_ts) / (end_ts - start_ts) - 1))));
+				return next;
+			}
+
+			function write(value) {
+				document.querySelector('#counter').innerHTML = formatter.format(value);
+			}
+
+			function toggleUpdating() {
+				if (updateTimer != null) {
+					stopUpdating();
+				} else {
+					startUpdating();
+				}
+			}
+
+			function startUpdating() {
+				updateTimer = updateCounter();
+				document.querySelector('#pause_resume').innerHTML = 'Pause';
+			}
+			
+			function stopUpdating() {
+				clearTimeout(updateTimer);
+				updateTimer = null;
+				document.querySelector('#pause_resume').innerHTML = 'Resume';
+			}
+			
+			function updateCounter() {
+				const start_ts = performance.now();
+				const end_ts = start_ts + ANIMATION_DURATION;
+				counterNext = counter + Math.round(Math.random() * UPDATE_AMOUNT);
+				requestAnimationFrame((ts) => {
+					dialUp(counter, counterNext, counter, start_ts, end_ts, start_ts);
+					counter = counterNext;
+				});
+				updateTimer = setTimeout(updateCounter, UPDATE_TICK);
+			}
+
+			function dialUp(from, to, current, start_ts, end_ts, current_ts) {
+				write(current);
+				const next = ease_in_out(from, to, start_ts, end_ts, current_ts);
+				if (current_ts < end_ts) {
+					requestAnimationFrame((ts) => {
+						dialUp(from, to, next, start_ts, end_ts, ts);
+					});
+				} else {
+					write(to);
+				}
+			}
+
+			window.addEventListener('load', () => {
+				startUpdating();
+			});
+		</script>
+	</body>
+</html>
